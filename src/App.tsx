@@ -205,7 +205,6 @@ export default function App() {
           </div>
           <div className="hero-bottom content-width">
             <div className="hero-place-label">
-              <span className="micro-label">CURRENTLY EXPLORING</span>
               <div><MapPin size={17} strokeWidth={1.5} /><span>{featured.name} <small>/ {featured.region}</small></span></div>
             </div>
             <div className="hero-switcher" aria-label="Explore featured destinations">
