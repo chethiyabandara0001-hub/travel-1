@@ -1,0 +1,17 @@
+CEYLONO / HUMAN-ART-DIRECTED DESIGN SYSTEM
+
+BRAND IDEA
+A travel journal, not a technology dashboard. Understated modern luxury, with curiosity, calm and storytelling.
+
+VISUAL VOCABULARY
+- Type: Instrument Serif (oversized editorial statement) + DM Sans (quiet functional labels) + rare DM Mono only for folios.
+- Color: forest ink #1b3228, cream paper #f5f2e9, old ivory #ebe7dc, warm terracotta #af6d43.
+- Layout: 1400px max content, asymmetric columns, image-led compositions, genuine negative space, hairline separators.
+- Images: large, emotional, destination-specific photos with consistent color treatment. License and fact-check before launch.
+- Motion: fade/translate micro-entrances, intentional image transitions and restrained crop zoom. No glowing cursors, spinning particles, or technical demo labels.
+
+AVOID
+Uniform glass cards, generic gradients, gratuitous badges and pills, faux counters, algorithmic-looking dot overlays, and placeholder jargon like "3D MEDIA DYNAMICS", "MOVE INTERACTION STATES", "phase 03".
+
+FRONTEND
+React + Vite. No artificial "request dispatched" message; clipboard brief is honest about not being a booking. Implement a real inquiry channel when credentials and provider are supplied.

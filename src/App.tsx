@@ -1,1008 +1,337 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useEffect, useRef, useState } from 'react';
-// Anime.js v3.2.2 is loaded via CDN script in index.html
-declare const anime: any;
+import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
-  Search,
-  ArrowRight,
-  ArrowLeft,
-  Compass,
-  Sliders,
-  X,
-  Check,
-  Sparkles,
-  MousePointer2
+  ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown,
+  Compass, Copy, MapPin, Menu, Minus, Plus, X
 } from 'lucide-react';
+import './index.css';
 
-interface Sanctuary {
+type Destination = {
   id: string;
-  step: string;
-  coordsLat: string;
-  coordsLon: string;
-  title1: string;
-  title2: string;
-  title3: string;
-  subtitle: string;
   name: string;
   region: string;
-  elevation: string;
+  eyebrow: string;
+  subtitle: string;
   image: string;
-  tag: string;
-  description: string;
+  imageAlt: string;
+  summary: string;
   highlights: string[];
-}
+  nights: number;
+};
 
-const SANCTUARIES: Sanctuary[] = [
+const DESTINATIONS: Destination[] = [
   {
-    id: 'sigiriya',
-    step: '01/05',
-    coordsLat: "07°57' N",
-    coordsLon: "80°45' E",
-    title1: 'Ceylon.',
-    title2: 'The Resonant',
-    title3: 'Island.',
-    subtitle: 'Curated journeys through heritage, wild jungles, and golden tides.',
-    name: 'Sigiriya Sky Citadel',
-    region: 'Central Province',
-    elevation: '370m',
-    image: 'https://images.unsplash.com/photo-1588598198321-9735fd52455b?auto=format&fit=crop&w=2000&q=85',
-    tag: 'stagger opacity',
-    description: 'A monolithic 5th-century palace engineered by King Kashyapa 200 meters above dense tropical canopy, celebrated for symmetrical water gardens and ancient frescoes.',
-    highlights: ['Lion Gate Citadel', 'Symmetrical Mirror Basins', 'Celestial Cloud Frescoes', 'Summit Palace Terraces']
+    id: 'sigiriya', name: 'Sigiriya', region: 'The Cultural Triangle', eyebrow: '01 / THE ANCIENT HEART',
+    subtitle: 'Where history rises above the canopy.',
+    image: 'https://images.unsplash.com/photo-1588598198321-9735fd52455b?auto=format&fit=crop&w=2200&q=85',
+    imageAlt: 'An atmospheric landscape in Sri Lanka',
+    summary: 'Rise before the sun to discover the ancient rock fortress, quiet village paths and the extraordinary art of a civilization that still shapes the island.',
+    highlights: ['The ancient rock fortress', 'Village walks & local kitchens', 'Golden-hour landscapes'], nights: 3,
   },
   {
-    id: 'ella',
-    step: '02/05',
-    coordsLat: "06°52' N",
-    coordsLon: "81°03' E",
-    title1: 'Highlands.',
-    title2: 'Misty Tea',
-    title3: 'Valleys.',
-    subtitle: 'Wandering emerald cloud forests, cascading waterfalls, and colonial viaducts.',
-    name: 'Ella Cloud Highlands',
-    region: 'Central Highlands',
-    elevation: '1,041m',
-    image: 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=2000&q=85',
-    tag: 'elastic.easeOut',
-    description: 'Enveloped in emerald mountain mist, home to the colonial Nine Arches Viaduct, roaring Ravana gorge, and high-elevation artisan Orange Pekoe tea estates.',
-    highlights: ['Nine Arches Bridge', 'Little Adam’s Peak', 'Ravana Falls Gorge', 'Hand-picked Orange Pekoe']
+    id: 'ella', name: 'Ella', region: 'The Hill Country', eyebrow: '02 / ABOVE THE CLOUDS',
+    subtitle: 'Slow mornings in the emerald highlands.',
+    image: 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=2200&q=85',
+    imageAlt: 'Green hills and mist in the highlands',
+    summary: 'Follow winding mountain paths, meet tea growers and find the quiet between mist-covered peaks and railway journeys through the hills.',
+    highlights: ['Tea country encounters', 'Mountain walks', 'The hill-country railway'], nights: 3,
   },
   {
-    id: 'yala',
-    step: '03/05',
-    coordsLat: "06°22' N",
-    coordsLon: "81°31' E",
-    title1: 'Wild Apex.',
-    title2: 'Roaring Scrub',
-    title3: 'Savannas.',
-    subtitle: 'Tracking wild Asian elephants, coastal lagoons, and the highest leopard density.',
-    name: 'Yala Wildlife Reserve',
-    region: 'Southern Scrubland',
-    elevation: '32m',
-    image: 'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=2000&q=85',
-    tag: 'shape morphing',
-    description: 'Vast coastal thorn scrub and lagoons sustaining roaming herds of wild elephants, sloth bears, and the world’s densest wild leopard habitat.',
-    highlights: ['Leopard Stalking Dunes', 'Elephant Bathing Lagoons', 'Menik River Banks', 'Crested Serpent Eagles']
+    id: 'yala', name: 'Yala', region: 'The Wild South', eyebrow: '03 / INTO THE WILD',
+    subtitle: 'An untamed rhythm, entirely its own.',
+    image: 'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=2200&q=85',
+    imageAlt: 'Wild elephants in their natural habitat',
+    summary: 'Explore the changing textures of the dry-zone wilderness with thoughtful wildlife encounters and extraordinary coastal scenery.',
+    highlights: ['Naturalist-led wildlife drives', 'Quiet coastal landscapes', 'Sunrise in the wilderness'], nights: 2,
   },
   {
-    id: 'arugambay',
-    step: '04/05',
-    coordsLat: "06°50' N",
-    coordsLon: "81°49' E",
-    title1: 'Ocean Swell.',
-    title2: 'Golden Point',
-    title3: 'Breaks.',
-    subtitle: 'Warm Indian Ocean barrels peeling across pristine sands and bohemian coastline.',
-    name: 'Arugam Bay Surf Line',
-    region: 'Eastern Shore',
-    elevation: '4m',
-    image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=2000&q=85',
-    tag: 'hover-path',
-    description: 'Legendary peeling right-hand point breaks, untouched sand dunes, and relaxed coastal luxury bathed in equatorial trade winds.',
-    highlights: ['Main Point Right Barrel', 'Whiskey Point Sunsets', 'Kottukal Lagoon Safari', 'Fresh Coastal Crab Curry']
+    id: 'arugam', name: 'Arugam Bay', region: 'The East Coast', eyebrow: '04 / THE EASTERN TIDE',
+    subtitle: 'Let the days move with the ocean.',
+    image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=2200&q=85',
+    imageAlt: 'A surfer riding a wave in the ocean',
+    summary: 'Long afternoons, salty air and a coastline that invites you to put the itinerary away for a while.',
+    highlights: ['Surf & ocean mornings', 'Coastal village life', 'Laid-back sunset evenings'], nights: 4,
   },
   {
-    id: 'galle',
-    step: '05/05',
-    coordsLat: "06°01' N",
-    coordsLon: "80°13' E",
-    title1: 'Ramparts.',
-    title2: 'Living Coral',
-    title3: 'Bastions.',
-    subtitle: 'Seventeenth-century Dutch granite bastions meeting azure oceanic migration corridors.',
-    name: 'Galle Maritime Fort',
-    region: 'Southern Coast',
-    elevation: '12m',
-    image: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=2000&q=85',
-    tag: 'parallax layering',
-    description: 'Living coral and granite ramparts of Galle Fort meeting migrating blue whales and spinner dolphins off the crystalline southern continental shelf.',
-    highlights: ['Old Dutch Lighthouse', 'Coral Stone Ramparts', 'Deep Sea Cetacean Trek', 'Artisanal Cinnamon Mills']
-  }
+    id: 'galle', name: 'Galle', region: 'The Southern Coast', eyebrow: '05 / SALT & STORIES',
+    subtitle: 'An old-world city beside the sea.',
+    image: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=2200&q=85',
+    imageAlt: 'A tropical coastal landscape',
+    summary: 'Walk shaded streets within centuries-old fort walls, linger over good food and take in the Indian Ocean as the sun goes down.',
+    highlights: ['Galle Fort architecture', 'Independent artisan studios', 'Oceanfront sundowners'], nights: 2,
+  },
 ];
 
+const EXPERIENCES = [
+  {
+    no: '01', title: 'The wild side', subtitle: 'Where the island is still untamed',
+    image: 'https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1400&q=85',
+    imageAlt: 'Elephants wandering in the wild', tag: 'WILDLIFE', destinationId: 'yala',
+  },
+  {
+    no: '02', title: 'In the highlands', subtitle: 'Tea, mist and slower mornings',
+    image: 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=85',
+    imageAlt: 'Misty Sri Lankan hills', tag: 'NATURE', destinationId: 'ella',
+  },
+  {
+    no: '03', title: 'An ocean state of mind', subtitle: 'The coast, on its own terms',
+    image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1200&q=85',
+    imageAlt: 'Surfing on ocean waves', tag: 'COAST', destinationId: 'arugam',
+  },
+];
+
+const PACES = ['Unhurried', 'Adventure', 'Culture', 'A little of everything'] as const;
+type Pace = typeof PACES[number];
+
+function Wordmark({ light = false }: { light?: boolean }) {
+  return <span className={`wordmark ${light ? 'wordmark--light' : ''}`}>ceylono<span className="wordmark-dot">.</span></span>;
+}
+
+function SectionMarker({ children, inverted = false }: { children: React.ReactNode; inverted?: boolean }) {
+  return <div className={`section-marker ${inverted ? 'section-marker--inverted' : ''}`}><span className="marker-dash" />{children}</div>;
+}
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 export default function App() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const current = SANCTUARIES[currentIndex];
+  const prefersReducedMotion = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [selected, setSelected] = useState(0);
+  const [guestCount, setGuestCount] = useState(2);
+  const [days, setDays] = useState(8);
+  const [pace, setPace] = useState<Pace>('Unhurried');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [month, setMonth] = useState('Flexible dates');
 
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dynamicFormOpen, setDynamicFormOpen] = useState(false);
-  const [nightsSlider, setNightsSlider] = useState(7);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
-
-  // Animation Refs
-  const organicMaskRef = useRef<HTMLDivElement>(null);
-  const heroImageRef = useRef<HTMLImageElement>(null);
-  const topTrajectoryPathRef = useRef<SVGPathElement>(null);
-  const rockTrajectoryPathRef = useRef<SVGPathElement>(null);
-  const topFollowerRef = useRef<SVGGElement>(null);
-  const rockFollowerRef = useRef<SVGGElement>(null);
-  const customCursorDotRef = useRef<HTMLDivElement>(null);
-  const customCursorRingRef = useRef<HTMLDivElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Audio Synthesizer: 432Hz Resonant Drone & Ambient Waves
-  const toggleAudio = () => {
-    if (!isAudioPlaying) {
-      try {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AudioContextClass();
-        audioContextRef.current = ctx;
-
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(216, ctx.currentTime);
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(432, ctx.currentTime);
-
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-        osc1.start();
-        osc2.start();
-
-        setIsAudioPlaying(true);
-      } catch (e) {
-        console.warn('Audio synthesis fallback', e);
-        setIsAudioPlaying(true);
-      }
-    } else {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-      setIsAudioPlaying(false);
-    }
-  };
-
-  // Dual-Ring Custom Trailing Cursor with Anime.js inertia
-  useEffect(() => {
-    const dot = customCursorDotRef.current;
-    const ring = customCursorRingRef.current;
-    if (!dot || !ring) return;
-
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-    let ringX = mouseX;
-    let ringY = mouseY;
-    let isMoving = true;
-
-    const onMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      dot.style.left = `${mouseX}px`;
-      dot.style.top = `${mouseY}px`;
-    };
-
-    const renderCursor = () => {
-      if (!ring) return;
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
-      ring.style.left = `${ringX}px`;
-      ring.style.top = `${ringY}px`;
-      if (isMoving) requestAnimationFrame(renderCursor);
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    requestAnimationFrame(renderCursor);
-
-    const hoverables = document.querySelectorAll('button, a, input, [data-interactive="true"]');
-    const handleMouseEnter = () => ring.classList.add('active');
-    const handleMouseLeave = () => ring.classList.remove('active');
-
-    hoverables.forEach(el => {
-      el.addEventListener('mouseenter', handleMouseEnter);
-      el.addEventListener('mouseleave', handleMouseLeave);
-    });
-
-    return () => {
-      isMoving = false;
-      window.removeEventListener('mousemove', onMouseMove);
-      hoverables.forEach(el => {
-        el.removeEventListener('mouseenter', handleMouseEnter);
-        el.removeEventListener('mouseleave', handleMouseLeave);
-      });
-    };
-  }, [currentIndex, dynamicFormOpen]);
-
-  // Master Orchestration: 20+ Anime.js Animations
-  const runMasterAnimations = () => {
-    if (typeof anime === 'undefined') return;
-
-    // 1. Entrance Stagger
-    anime({
-      targets: '.anime-nav-entry',
-      opacity: [0, 1],
-      translateY: [-16, 0],
-      delay: anime.stagger(90, { start: 100 }),
-      easing: 'easeOutCubic',
-      duration: 800
-    });
-
-    // 2. Split-Text Reveal for "Ceylon. The Resonant Island."
-    anime({
-      targets: '.anime-char',
-      opacity: [0, 1],
-      translateY: [40, 0],
-      skewY: [5, 0],
-      delay: anime.stagger(30, { start: 150 }),
-      easing: 'easeOutExpo',
-      duration: 1000
-    });
-
-    // 3. Subtitle Word Stagger
-    anime({
-      targets: '.anime-sub-word',
-      opacity: [0, 1],
-      translateY: [14, 0],
-      delay: anime.stagger(40, { start: 600 }),
-      easing: 'easeOutQuart',
-      duration: 700
-    });
-
-    // 4. Dynamic SVG Path Draw for trajectories
-    if (topTrajectoryPathRef.current) {
-      anime({
-        targets: topTrajectoryPathRef.current,
-        strokeDashoffset: [anime.setDashoffset(topTrajectoryPathRef.current), 0],
-        easing: 'easeInOutSine',
-        duration: 2400,
-        delay: 300
-      });
-    }
-
-    if (rockTrajectoryPathRef.current) {
-      anime({
-        targets: rockTrajectoryPathRef.current,
-        strokeDashoffset: [anime.setDashoffset(rockTrajectoryPathRef.current), 0],
-        easing: 'easeInOutSine',
-        duration: 2600,
-        delay: 500
-      });
-    }
-
-    // 5. Path Follower along upper trajectory
-    if (topTrajectoryPathRef.current && topFollowerRef.current) {
-      const pathTop = anime.path(topTrajectoryPathRef.current);
-      anime({
-        targets: topFollowerRef.current,
-        translateX: pathTop('x'),
-        translateY: pathTop('y'),
-        rotate: pathTop('angle'),
-        easing: 'easeInOutQuad',
-        duration: 5200,
-        loop: true,
-        delay: 400
-      });
-    }
-
-    // Secondary Path Follower to Sigiriya rock
-    if (rockTrajectoryPathRef.current && rockFollowerRef.current) {
-      const pathRock = anime.path(rockTrajectoryPathRef.current);
-      anime({
-        targets: rockFollowerRef.current,
-        translateX: pathRock('x'),
-        translateY: pathRock('y'),
-        rotate: pathRock('angle'),
-        easing: 'easeInOutSine',
-        duration: 6000,
-        loop: true,
-        delay: 700
-      });
-    }
-
-    // 6. Organic Mask Morph: Sigiriya rock cutout morphing shape continuously
-    if (organicMaskRef.current) {
-      anime({
-        targets: organicMaskRef.current,
-        borderRadius: [
-          '48% 52% 58% 42% / 46% 48% 52% 54%',
-          '56% 44% 48% 52% / 54% 60% 40% 46%',
-          '44% 56% 54% 46% / 42% 46% 54% 58%',
-          '48% 52% 58% 42% / 46% 48% 52% 54%'
-        ],
-        easing: 'easeInOutSine',
-        duration: 16000,
-        loop: true,
-        direction: 'alternate'
-      });
-    }
-
-    // 20. Ambient Atmosphere Breathing (radial volcanic glow)
-    anime({
-      targets: '.anime-radial-glow',
-      scale: [1, 1.2],
-      opacity: [0.3, 0.6],
-      direction: 'alternate',
-      loop: true,
-      easing: 'easeInOutSine',
-      duration: 7000
-    });
-
-    // 22. Audio Waveform Equalizer
-    anime({
-      targets: '.anime-bar',
-      height: ['3px', '18px'],
-      direction: 'alternate',
-      loop: true,
-      easing: 'easeInOutQuad',
-      duration: () => anime.random(350, 800),
-      delay: anime.stagger(90)
-    });
-
-    // Glowing Star/Orb Breathing
-    anime({
-      targets: '.anime-glow-star',
-      scale: [1, 1.35],
-      opacity: [0.7, 1],
-      direction: 'alternate',
-      loop: true,
-      easing: 'easeInOutSine',
-      duration: () => anime.random(2000, 3500),
-      delay: anime.stagger(300)
-    });
-  };
+  const featured = DESTINATIONS[active];
+  const selectedDestination = DESTINATIONS[selected];
+  const detail = DESTINATIONS.find(d => d.id === detailId);
+  const travelBrief = useMemo(() => [
+    'CEYLONO / YOUR TRAVEL BRIEF',
+    `Destination: ${selectedDestination.name}, ${selectedDestination.region}`,
+    `Length of stay: ${days} days`,
+    `Travellers: ${guestCount}`,
+    `Travel style: ${pace}`,
+    `Dates: ${month}`,
+    'I would like to explore a personally curated journey in Sri Lanka.'
+  ].join('\n'), [selectedDestination, days, guestCount, pace, month]);
 
   useEffect(() => {
-    runMasterAnimations();
-  }, [currentIndex]);
+    const onScroll = () => setIsScrolled(window.scrollY > 42);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDetailId(null); setMenuOpen(false); } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('keydown', onKey);
+    onScroll();
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('keydown', onKey); };
+  }, []);
 
-  // 7. Mouse Parallax Layering: Rock visual & star dust shift on mouse move
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
+  useEffect(() => {
+    document.body.style.overflow = detailId || menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [detailId, menuOpen]);
 
-    if (heroImageRef.current && typeof anime !== 'undefined') {
-      anime({
-        targets: heroImageRef.current,
-        translateX: x * 34,
-        translateY: y * 34,
-        scale: 1.05,
-        easing: 'easeOutQuad',
-        duration: 400
-      });
-    }
-
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: '.anime-star-layer',
-        translateX: -x * 45,
-        translateY: -y * 45,
-        easing: 'easeOutQuad',
-        duration: 600
-      });
-    }
+  const reveal = {
+    initial: { opacity: 0, y: prefersReducedMotion ? 0 : 24 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.16 },
+    transition: { duration: prefersReducedMotion ? 0 : 0.75, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   };
 
-  const handleCanvasMouseLeave = () => {
-    if (heroImageRef.current && typeof anime !== 'undefined') {
-      anime({
-        targets: heroImageRef.current,
-        translateX: 0,
-        translateY: 0,
-        scale: 1,
-        easing: 'easeOutCubic',
-        duration: 800
-      });
-    }
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: '.anime-star-layer',
-        translateX: 0,
-        translateY: 0,
-        easing: 'easeOutCubic',
-        duration: 800
-      });
+  const copyBrief = async () => {
+    try {
+      await navigator.clipboard.writeText(travelBrief);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt('Copy your travel brief:', travelBrief);
     }
   };
 
-  // 17. Magnetic Button Snap
-  const handleMagneticMove = (e: React.MouseEvent<HTMLElement>) => {
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const btnCenterX = rect.left + rect.width / 2;
-    const btnCenterY = rect.top + rect.height / 2;
-    const deltaX = (e.clientX - btnCenterX) * 0.4;
-    const deltaY = (e.clientY - btnCenterY) * 0.4;
-
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: btn,
-        translateX: deltaX,
-        translateY: deltaY,
-        easing: 'easeOutQuad',
-        duration: 250
-      });
-    }
-  };
-
-  const handleMagneticLeave = (e: React.MouseEvent<HTMLElement>) => {
-    const btn = e.currentTarget;
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: btn,
-        translateX: 0,
-        translateY: 0,
-        easing: 'easeOutElastic(1, 0.6)',
-        duration: 700
-      });
-    }
-  };
-
-  // Navigation Prev/Next
-  const handleNext = () => {
-    const nextIdx = (currentIndex + 1) % SANCTUARIES.length;
-    transitionTo(nextIdx, 1);
-  };
-
-  const handlePrev = () => {
-    const prevIdx = (currentIndex - 1 + SANCTUARIES.length) % SANCTUARIES.length;
-    transitionTo(prevIdx, -1);
-  };
-
-  const transitionTo = (index: number, dir: number) => {
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: heroImageRef.current,
-        opacity: [0.4, 1],
-        scale: [1.1, 1],
-        translateX: [dir * 30, 0],
-        easing: 'easeOutQuart',
-        duration: 800
-      });
-
-      anime({
-        targets: '.anime-progress-line-fill',
-        width: `${((index + 1) / SANCTUARIES.length) * 100}%`,
-        easing: 'easeOutElastic(1, 0.7)',
-        duration: 750
-      });
-    }
-    setCurrentIndex(index);
-  };
-
-  // Search input interaction
-  const handleSearchFocus = () => {
-    setSearchFocused(true);
-    setDynamicFormOpen(true);
-    if (typeof anime !== 'undefined') {
-      anime({
-        targets: '#search-capsule-wrapper',
-        scale: 1.04,
-        boxShadow: '0 0 35px rgba(217, 119, 70, 0.45)',
-        easing: 'easeOutBack',
-        duration: 450
-      });
-    }
-  };
+  const navigate = (id: string) => { setMenuOpen(false); scrollToSection(id); };
 
   return (
-    <div
-      onMouseMove={handleCanvasMouseMove}
-      onMouseLeave={handleCanvasMouseLeave}
-      className="relative w-screen h-screen min-h-[700px] overflow-hidden bg-[#121417] text-[#e2ded7] select-none font-tech"
-    >
-      {/* 18. Custom Dual-Ring Trailing Cursor */}
-      <div ref={customCursorDotRef} className="custom-cursor-dot hidden md:block" />
-      <div ref={customCursorRingRef} className="custom-cursor-ring hidden md:block" />
-
-      {/* 20. Ambient Atmosphere Breathing (Soft volcanic obsidian background) */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="anime-radial-glow absolute -top-40 -left-40 w-[800px] h-[800px] bg-gradient-to-br from-[#d97746]/10 via-[#181a1f]/50 to-transparent rounded-full blur-[140px]" />
-        <div className="anime-radial-glow absolute -bottom-40 right-1/4 w-[850px] h-[850px] bg-gradient-to-tl from-[#e2ded7]/8 via-[#d97746]/8 to-transparent rounded-full blur-[160px]" />
-        <div className="absolute inset-0 bg-noise opacity-35" />
-      </div>
-
-      {/* ========================================================= */}
-      {/* TOP HEADER: EXACT BRAND + TRANSLUCENT NAVIGATION PILL */}
-      {/* ========================================================= */}
-      <header className="relative z-40 w-full px-8 sm:px-16 pt-8 sm:pt-10 flex items-center justify-between">
-        
-        {/* Left: "Ceylono" Brand Logo in elegant serif */}
-        <div className="anime-nav-entry">
-          <span className="font-cinzel text-3xl sm:text-4xl font-normal tracking-wide text-white cursor-pointer hover:text-[#d97746] transition-colors">
-            Ceylono
-          </span>
-        </div>
-
-        {/* Center-Right: Translucent Acrylic Coordinate & Audio Capsule Pill */}
-        <div className="anime-nav-entry flex items-center rounded-full bg-[#1e2025]/80 border border-white/10 backdrop-blur-2xl px-5 py-2.5 shadow-2xl shadow-black/60 gap-5 sm:gap-7">
-          
-          {/* Audio Waveform Synthesizer Icon */}
-          <button
-            onClick={toggleAudio}
-            title="Toggle Ceylon Resonant Audio Stream"
-            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <div className="flex items-center gap-0.5 h-4">
-              <span className={`anime-bar w-0.5 bg-white/70 rounded-full ${!isAudioPlaying ? 'h-1 opacity-40' : ''}`} />
-              <span className={`anime-bar w-0.5 bg-white/70 rounded-full ${!isAudioPlaying ? 'h-2.5 opacity-40' : ''}`} />
-              <span className={`anime-bar w-0.5 bg-white/70 rounded-full ${!isAudioPlaying ? 'h-4 opacity-40' : ''}`} />
-              <span className={`anime-bar w-0.5 bg-white/70 rounded-full ${!isAudioPlaying ? 'h-2 opacity-40' : ''}`} />
-              <span className={`anime-bar w-0.5 bg-white/70 rounded-full ${!isAudioPlaying ? 'h-1 opacity-40' : ''}`} />
-            </div>
-          </button>
-
-          {/* Coordinates Readout matching screenshot: LAT 07°57' N // LON 80°45' E */}
-          <div className="font-mono-coord text-xs sm:text-sm tracking-wider text-white/80 font-medium">
-            LAT {current.coordsLat} // LON {current.coordsLon}
-          </div>
-
-          {/* Step Counter: 01/05 */}
-          <div className="font-mono-coord text-xs sm:text-sm text-white/60 font-normal">
-            {current.step}
-          </div>
-
-          {/* Far Right Oval Pill Button with Gold Border and Arrow */}
-          <button
-            onClick={() => setDetailModalOpen(true)}
-            onMouseMove={handleMagneticMove}
-            onMouseLeave={handleMagneticLeave}
-            title="Explore Sanctuary"
-            className="w-14 sm:w-16 h-7 rounded-full border border-amber-300/60 bg-amber-400/5 hover:bg-amber-400/20 flex items-center justify-center text-amber-200/90 transition-all shadow-[0_0_12px_rgba(251,191,36,0.15)] group"
-          >
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
-
-        </div>
+    <div className="site-shell">
+      <a className="skip-link" href="#main">Skip to content</a>
+      <header className={`site-header ${isScrolled ? 'is-scrolled' : ''}`}>
+        <button className="brand-button" onClick={() => navigate('home')} aria-label="Ceylono home"><Wordmark light /></button>
+        <nav className="desktop-nav" aria-label="Main navigation">
+          <button onClick={() => navigate('story')}>Our philosophy</button>
+          <button onClick={() => navigate('places')}>The places</button>
+          <button onClick={() => navigate('experiences')}>Experiences</button>
+        </nav>
+        <button className="header-cta" onClick={() => navigate('enquire')}>
+          Plan a journey <ArrowUpRight size={15} strokeWidth={1.6} />
+        </button>
+        <button className="mobile-menu-toggle" aria-label="Open navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(v => !v)}>
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </header>
 
-      {/* ========================================================= */}
-      {/* MAIN VIEWPORT: EDITORIAL HERO & EXACT ORGANIC SIGIRIYA ROCK */}
-      {/* ========================================================= */}
-      <div className="relative w-full h-[calc(100vh-100px)] px-8 sm:px-16 flex flex-col justify-between pt-6 sm:pt-10 pb-8 z-20">
-        
-        {/* Main Grid Stage */}
-        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center flex-1">
-          
-          {/* LEFT COLUMN: EDITORIAL TYPOGRAPHY & BEGIN JOURNEY */}
-          <div className="lg:col-span-5 max-w-lg z-30 pt-2 sm:pt-6">
-            
-            {/* Top Coordinate Bracket Tag: _LAT 07°57' N] */}
-            <div className="font-mono-coord text-[11px] sm:text-xs text-white/40 tracking-wider mb-5">
-              _LAT {current.coordsLat}]
+      <AnimatePresence>
+        {menuOpen && <motion.div className="mobile-menu" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+          <Wordmark light />
+          <button onClick={() => navigate('story')}>Our philosophy</button>
+          <button onClick={() => navigate('places')}>The places</button>
+          <button onClick={() => navigate('experiences')}>Experiences</button>
+          <button onClick={() => navigate('enquire')}>Plan a journey <ArrowUpRight size={18}/></button>
+        </motion.div>}
+      </AnimatePresence>
+
+      <main id="main">
+        <section className="hero" id="home" aria-label="Discover Sri Lanka">
+          <AnimatePresence mode="sync">
+            <motion.div className="hero-photo" key={featured.id}
+              initial={{opacity:0, scale:1.045}} animate={{opacity:1, scale:1}}
+              exit={{opacity:0}} transition={{duration: prefersReducedMotion ? 0 : 1.1, ease:'easeOut'}}>
+              <img src={featured.image} alt={featured.imageAlt} fetchPriority="high" />
+            </motion.div>
+          </AnimatePresence>
+          <div className="hero-shade" aria-hidden="true" />
+          <div className="hero-frame" aria-hidden="true"><span>EST. ON AN ISLAND OF STORIES</span><span>SRI LANKA · 07° N / 81° E</span></div>
+          <div className="hero-content content-width">
+            <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.85,delay:.12}}>
+              <SectionMarker inverted>NOT JUST ANOTHER DESTINATION</SectionMarker>
+              <h1>An island<br />to <em>feel.</em><br />Not just see.</h1>
+              <div className="hero-bottomline">
+                <p>Unhurried, thoughtfully crafted journeys through the many sides of Sri Lanka.</p>
+                <button className="round-link round-link--cream" onClick={() => navigate('story')} aria-label="Discover our approach"><ArrowDown size={19} strokeWidth={1.6}/></button>
+              </div>
+            </motion.div>
+          </div>
+          <div className="hero-bottom content-width">
+            <div className="hero-place-label">
+              <span className="micro-label">CURRENTLY EXPLORING</span>
+              <div><MapPin size={17} strokeWidth={1.5} /><span>{featured.name} <small>/ {featured.region}</small></span></div>
             </div>
+            <div className="hero-switcher" aria-label="Explore featured destinations">
+              <button onClick={() => setActive(i => (i - 1 + DESTINATIONS.length) % DESTINATIONS.length)} aria-label="Previous destination"><ArrowLeft size={17}/></button>
+              <span><strong>{String(active+1).padStart(2,'0')}</strong> <span className="hero-switcher-line" /> {String(DESTINATIONS.length).padStart(2,'0')}</span>
+              <button onClick={() => setActive(i => (i + 1) % DESTINATIONS.length)} aria-label="Next destination"><ArrowRight size={17}/></button>
+            </div>
+          </div>
+        </section>
 
-            {/* Split-Text Reveal Header: Ceylon. The Resonant Island. */}
-            <h1 className="font-cinzel text-5xl sm:text-6xl md:text-7xl font-normal tracking-tight text-white leading-[1.06] mb-5">
-              <span className="block overflow-hidden">
-                {current.title1.split('').map((char, i) => (
-                  <span key={i} className="anime-char inline-block text-white">
-                    {char === ' ' ? '\u00A0' : char}
-                  </span>
-                ))}
-              </span>
-              <span className="block overflow-hidden">
-                {current.title2.split('').map((char, i) => (
-                  <span key={i} className="anime-char inline-block text-white">
-                    {char === ' ' ? '\u00A0' : char}
-                  </span>
-                ))}
-              </span>
-              <span className="block overflow-hidden">
-                {current.title3.split('').map((char, i) => (
-                  <span key={i} className="anime-char inline-block text-white">
-                    {char === ' ' ? '\u00A0' : char}
-                  </span>
-                ))}
-              </span>
-            </h1>
+        <section className="intro-section" id="story">
+          <div className="content-width intro-grid">
+            <motion.div {...reveal}>
+              <SectionMarker>THIS IS CEYLONO</SectionMarker>
+              <h2 className="display-heading">There is more to this island than meets the <em>eye.</em></h2>
+            </motion.div>
+            <motion.div className="intro-copy" {...reveal}>
+              <span className="intro-number">01 — 04</span>
+              <p className="intro-lead">Some places stay with you long after you've left.</p>
+              <p>We believe travel should be more than a checklist. The best journeys leave room for wandering, listening, meeting people, and discovering something unexpected along the way.</p>
+              <button className="text-link" onClick={() => navigate('places')}>Discover our places <ArrowUpRight size={17}/></button>
+            </motion.div>
+          </div>
+          <div className="marquee-words" aria-hidden="true"><span>WONDER &nbsp; • &nbsp; CONNECTION &nbsp; • &nbsp; DISCOVERY &nbsp; • &nbsp; SLOW TRAVEL &nbsp; • &nbsp; WONDER &nbsp; • &nbsp; CONNECTION</span></div>
+        </section>
 
-            {/* Subtitle Paragraph */}
-            <p className="text-sm sm:text-base text-white/70 font-normal leading-relaxed mb-7 max-w-sm">
-              {current.subtitle.split(' ').map((word, i) => (
-                <span key={i} className="anime-sub-word inline-block mr-1.5">
-                  {word}
-                </span>
+        <section className="places-section" id="places">
+          <div className="content-width">
+            <div className="places-top">
+              <motion.div {...reveal}>
+                <SectionMarker>THE PLACES</SectionMarker>
+                <h2 className="display-heading">Five places.<br /><em>Infinite</em> stories.</h2>
+              </motion.div>
+              <motion.p {...reveal}>From ancient cities to wide-open coastlines, follow the feeling that draws you in.</motion.p>
+            </div>
+            <div className="places-layout">
+              <div className="places-list" role="list" aria-label="Sri Lanka destinations">
+                {DESTINATIONS.map((place, idx) => (
+                  <button key={place.id} className={`place-row ${selected === idx ? 'is-active' : ''}`} onClick={() => setSelected(idx)} aria-pressed={selected === idx}>
+                    <span className="place-index">{String(idx+1).padStart(2,'0')}</span>
+                    <span className="place-text"><strong>{place.name}</strong><small>{place.region}</small></span>
+                    <ArrowUpRight size={21} strokeWidth={1.4}/>
+                  </button>
+                ))}
+              </div>
+              <div className="places-feature">
+                <AnimatePresence mode="wait">
+                  <motion.div className="places-feature-photo" key={selectedDestination.id} initial={{opacity:0,scale:1.025}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:prefersReducedMotion?0:.5}}>
+                    <img src={selectedDestination.image} loading="lazy" alt={selectedDestination.imageAlt} />
+                  </motion.div>
+                </AnimatePresence>
+                <div className="places-feature-meta"><span>{selectedDestination.eyebrow}</span><span>SRI LANKA</span></div>
+                <div className="places-feature-foot"><p>{selectedDestination.subtitle}</p><button onClick={() => setDetailId(selectedDestination.id)} className="circle-ink" aria-label={`Read about ${selectedDestination.name}`}><ArrowUpRight size={20}/></button></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="interlude-section" aria-label="Our travel philosophy">
+          <div className="interlude-image"><img src="https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=2200&q=85" loading="lazy" alt="The green highlands of Sri Lanka" /></div>
+          <div className="interlude-shade" />
+          <motion.div className="interlude-content content-width" {...reveal}>
+            <span className="micro-label">A DIFFERENT PACE OF TRAVEL</span>
+            <p>Leave space for<br /><em>the unexpected.</em></p>
+            <span className="interlude-rule" />
+          </motion.div>
+        </section>
+
+        <section className="experience-section" id="experiences">
+          <div className="content-width">
+            <motion.div className="experience-head" {...reveal}>
+              <div><SectionMarker>WAY BEYOND THE ORDINARY</SectionMarker><h2 className="display-heading">Made of <em>moments.</em></h2></div>
+              <p>It is the little things — a quiet sunrise, a story shared, an unplanned turn — that make a journey yours.</p>
+            </motion.div>
+            <div className="experience-grid">
+              {EXPERIENCES.map((item, idx) => (
+                <motion.button {...reveal} className={`experience-card experience-card--${idx+1}`} key={item.no} onClick={() => setDetailId(item.destinationId)} aria-label={`Discover ${item.title}`}>
+                  <span className="experience-image"><img src={item.image} loading="lazy" alt={item.imageAlt}/><span className="experience-image-shade" /></span>
+                  <span className="experience-tag">{item.no} / {item.tag}</span>
+                  <span className="experience-card-bottom"><span><strong>{item.title}</strong><small>{item.subtitle}</small></span><span className="experience-arrow"><ArrowUpRight size={19}/></span></span>
+                </motion.button>
               ))}
-            </p>
-
-            {/* Pill Button: "Begin Journey" + Cursor with "Move-interaction states" */}
-            <div className="flex flex-col items-start gap-2">
-              <button
-                id="begin-journey-btn"
-                onClick={() => setDetailModalOpen(true)}
-                onMouseMove={handleMagneticMove}
-                onMouseLeave={handleMagneticLeave}
-                className="px-8 py-3 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-amber-300/40 hover:border-amber-300/80 text-sm sm:text-base text-white font-medium flex items-center gap-2 backdrop-blur-md shadow-[0_0_20px_rgba(251,191,36,0.12)] transition-all"
-              >
-                <span>Begin Journey</span>
-              </button>
-
-              {/* Hand pointer icon with "Move-interaction states" caption */}
-              <div className="flex items-center gap-1.5 pl-2 text-[11px] text-white/45 font-mono-coord mt-0.5">
-                <MousePointer2 className="w-3.5 h-3.5 text-white/50" />
-                <span>Move-interaction states</span>
-              </div>
             </div>
-
           </div>
+        </section>
 
-          {/* RIGHT COLUMN & CENTER CANVAS: TRAJECTORIES & ORGANIC SIGIRIYA MASK */}
-          <div className="lg:col-span-7 relative h-full w-full flex items-center justify-end">
-            
-            {/* Soft Ambient Underglow beneath the organic crescent */}
-            <div className="absolute top-1/2 -translate-y-1/2 right-12 w-[600px] h-[600px] bg-gradient-to-br from-amber-500/15 via-[#cad5c7]/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
-
-            {/* Background Pale Organic Crescent Accent (Seafoam/Sage Tint from Screenshot) */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 -right-8 w-[620px] sm:w-[700px] h-[620px] sm:h-[700px] pointer-events-none opacity-40 transition-all duration-700"
-              style={{
-                borderRadius: '50% 50% 48% 52% / 48% 54% 46% 52%',
-                border: '1.5px solid rgba(202, 213, 199, 0.45)',
-                background: 'radial-gradient(circle at 60% 40%, rgba(202, 213, 199, 0.18) 0%, transparent 70%)'
-              }}
-            />
-
-            {/* Floating Star Particles / Radiant Orbs with Halos matching screenshot */}
-            <div className="anime-star-layer absolute inset-0 pointer-events-none z-10">
-              {/* Central star cluster near upper trajectory */}
-              <div className="anime-glow-star absolute top-[16%] left-[30%] w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_white] opacity-80" />
-              <div className="anime-glow-star absolute top-[22%] left-[36%] w-1 h-1 bg-white rounded-full shadow-[0_0_6px_white] opacity-60" />
-              <div className="anime-glow-star absolute top-[28%] left-[42%] w-2 h-2 bg-white rounded-full shadow-[0_0_12px_white] opacity-90" />
-              <div className="anime-glow-star absolute top-[34%] left-[40%] w-1 h-1 bg-white rounded-full opacity-50" />
-              
-              {/* Waypoint star orb at the end of top trajectory */}
-              <div className="anime-glow-star absolute top-[33%] left-[45%] w-3 h-3 bg-white rounded-full shadow-[0_0_16px_white,0_0_24px_rgba(255,255,255,0.8)] opacity-95" />
-
-              {/* Waypoint node right before the rock */}
-              <div className="anime-glow-star absolute top-[52%] left-[5%] w-2.5 h-2.5 bg-amber-100 rounded-full shadow-[0_0_14px_#fbbf24] opacity-90" />
-
-              {/* Lower floating orb */}
-              <div className="anime-glow-star absolute bottom-[30%] left-[58%] w-4 h-4 bg-white/70 rounded-full blur-[1px] shadow-[0_0_18px_rgba(255,255,255,0.6)] opacity-70" />
-              <div className="anime-glow-star absolute bottom-[22%] left-[64%] w-2 h-2 bg-white/80 rounded-full shadow-[0_0_10px_white] opacity-75" />
-            </div>
-
-            {/* Trajectory Coordinate Tags */}
-            <div className="absolute top-[39%] left-[31%] text-[10px] font-mono-coord text-white/35 pointer-events-none z-20">
-              LON 80°45' E
-            </div>
-            <div className="absolute bottom-6 left-[18%] text-[10px] font-mono-coord text-white/30 pointer-events-none z-20">
-              [ 00 80°45' E
-            </div>
-
-            {/* SVG Trajectory Lines matching screenshot precisely */}
-            <svg
-              className="absolute inset-0 w-full h-full z-10 pointer-events-none"
-              viewBox="0 0 850 650"
-              fill="none"
-            >
-              <defs>
-                {/* Arrowhead marker for trajectory */}
-                <marker
-                  id="arrow-top"
-                  viewBox="0 0 10 10"
-                  refX="6"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e2ded7" fillOpacity="0.8" />
-                </marker>
-                <marker
-                  id="arrow-rock"
-                  viewBox="0 0 10 10"
-                  refX="6"
-                  refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#e2ded7" fillOpacity="0.9" />
-                </marker>
-                <marker
-                  id="arrow-bottom-left"
-                  viewBox="0 0 10 10"
-                  refX="5"
-                  refY="5"
-                  markerWidth="5"
-                  markerHeight="5"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 2 L 6 5 L 0 8 z" fill="#e2ded7" fillOpacity="0.6" />
-                </marker>
-              </defs>
-
-              {/* 1. Upper Curved Trajectory: From Begin Journey sweeping up to waypoint star */}
-              <path
-                ref={topTrajectoryPathRef}
-                d="M 50 370 C 130 380, 200 320, 260 260 C 310 215, 360 205, 420 200"
-                stroke="#e2ded7"
-                strokeWidth="1.2"
-                strokeDasharray="4 4"
-                strokeOpacity="0.45"
-                markerEnd="url(#arrow-top)"
-              />
-
-              {/* 2. Primary Swooping Arc to Sigiriya Rock: Curves in and points directly to the rock */}
-              <path
-                ref={rockTrajectoryPathRef}
-                d="M 400 420 C 470 450, 520 480, 580 430 C 630 390, 640 340, 680 320"
-                stroke="#e2ded7"
-                strokeWidth="1.4"
-                strokeOpacity="0.55"
-                markerEnd="url(#arrow-rock)"
-              />
-
-              {/* 3. Bottom-Left Trajectories near [parallax layering] */}
-              <path
-                d="M 90 510 C 80 470, 75 440, 85 410"
-                stroke="#e2ded7"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-                strokeOpacity="0.4"
-                markerEnd="url(#arrow-bottom-left)"
-              />
-              <path
-                d="M 120 510 C 170 500, 200 460, 240 400"
-                stroke="#e2ded7"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-                strokeOpacity="0.35"
-                markerEnd="url(#arrow-bottom-left)"
-              />
-
-              {/* Animated Trajectory Follower Orb along upper trajectory */}
-              <g ref={topFollowerRef}>
-                <circle r="4" fill="#ffffff" filter="drop-shadow(0 0 8px #ffffff)" />
-                <circle r="8" fill="none" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
-              </g>
-
-              {/* Animated Trajectory Follower Orb along rock trajectory */}
-              <g ref={rockFollowerRef}>
-                <circle r="3.5" fill="#fcd34d" filter="drop-shadow(0 0 8px #fcd34d)" />
-              </g>
-            </svg>
-
-            {/* THE GIANT ORGANIC CRESCENT MASK: SIGIRIYA ROCK FORTRESS */}
-            <div
-              ref={organicMaskRef}
-              className="relative w-[480px] sm:w-[580px] md:w-[650px] lg:w-[720px] h-[480px] sm:h-[580px] md:h-[650px] lg:h-[720px] overflow-hidden shadow-2xl border-2 border-white/10 z-10"
-              style={{
-                borderRadius: '48% 52% 58% 42% / 46% 48% 52% 54%',
-                boxShadow: '0 0 90px rgba(0,0,0,0.9), inset 0 0 60px rgba(0,0,0,0.6)'
-              }}
-            >
-              <img
-                ref={heroImageRef}
-                src={current.image}
-                alt={current.name}
-                className="w-full h-full object-cover filter brightness-[0.98] contrast-[1.08] transition-all duration-700"
-              />
-              {/* Edge vignetting to blend organically into obsidian backdrop */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#121417]/80 via-transparent to-transparent opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#121417]/60 via-transparent to-transparent opacity-60" />
-            </div>
-
-            {/* FLOATING SEARCH CAPSULE: "Whither your heart?" + "Dynamic form Inputs..." */}
-            <div className="absolute top-[48%] left-[2%] sm:left-[6%] z-30 w-64 sm:w-72">
-              <div
-                id="search-capsule-wrapper"
-                className="relative rounded-full bg-[#ece8df] text-[#1c1d21] p-1.5 flex items-center justify-between shadow-2xl transition-all duration-300"
-              >
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onFocus={handleSearchFocus}
-                  placeholder="Whither your heart?"
-                  className="bg-transparent pl-4 pr-2 text-xs sm:text-sm text-[#1c1d21] placeholder-[#1c1d21]/60 font-medium focus:outline-none w-full"
-                />
-                <button
-                  onClick={() => setDynamicFormOpen(!dynamicFormOpen)}
-                  className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors shrink-0 text-[#1c1d21]"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
+        <section className="enquiry-section" id="enquire">
+          <div className="content-width enquiry-grid">
+            <motion.div className="enquiry-intro" {...reveal}>
+              <SectionMarker>YOUR JOURNEY STARTS HERE</SectionMarker>
+              <h2 className="display-heading">Every great story begins with <em>a little curiosity.</em></h2>
+              <p>Start with a few details. Shape a travel brief you can share with a local travel specialist when you're ready.</p>
+              <div className="enquiry-side-note"><Compass size={26} strokeWidth={1.1}/><span>Made for journeys that feel personal, never prescribed.</span></div>
+            </motion.div>
+            <motion.div className="brief-card" {...reveal}>
+              <div className="brief-header"><div><span className="micro-label">CEYLONO / JOURNEY NOTES</span><h3>Make it yours.</h3></div><span className="brief-number">01 / 01</span></div>
+              <div className="brief-field"><label htmlFor="journey-destination">Where would you like to go?</label><div className="select-wrap"><select id="journey-destination" value={selected} onChange={e => setSelected(Number(e.target.value))}>{DESTINATIONS.map((dest,i)=><option key={dest.id} value={i}>{dest.name} — {dest.region}</option>)}</select><ChevronDown size={19}/></div></div>
+              <div className="brief-row">
+                <div className="brief-field"><label htmlFor="journey-month">When?</label><div className="select-wrap"><select id="journey-month" value={month} onChange={e => setMonth(e.target.value)}>{['Flexible dates','January – March','April – June','July – September','October – December'].map(m=><option key={m}>{m}</option>)}</select><ChevronDown size={18}/></div></div>
+                <div className="brief-field"><label>Travellers</label><div className="number-control"><button onClick={() => setGuestCount(v=>Math.max(1,v-1))} aria-label="Remove a traveller"><Minus size={16}/></button><span>{guestCount}</span><button onClick={() => setGuestCount(v=>Math.min(12,v+1))} aria-label="Add a traveller"><Plus size={16}/></button></div></div>
               </div>
-
-              {/* Lower Attached Capsule: "Dynamic form Inputs..." */}
-              <div
-                onClick={() => setDynamicFormOpen(!dynamicFormOpen)}
-                className="mt-1.5 px-4 py-2 rounded-2xl bg-[#1c1e23]/95 border border-white/10 hover:border-white/25 cursor-pointer backdrop-blur-xl flex items-center justify-between text-xs text-white/75 shadow-xl transition-all"
-              >
-                <span>Dynamic form Inputs...</span>
-                <Sliders className="w-3.5 h-3.5 text-white/50" />
-              </div>
-
-              {/* Dynamic Inputs Dropdown Selector */}
-              {dynamicFormOpen && (
-                <div className="absolute left-0 right-0 top-24 p-4 rounded-3xl bg-[#181a1f]/95 border border-white/15 backdrop-blur-2xl shadow-2xl z-40 space-y-3">
-                  <div className="flex items-center justify-between text-[10px] font-mono-coord uppercase tracking-wider text-white/40 pb-1 border-b border-white/10">
-                    <span>Expedition Configurator</span>
-                    <button onClick={() => setDynamicFormOpen(false)} className="text-white/60 hover:text-white">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="space-y-1.5">
-                    {SANCTUARIES.map((s, idx) => (
-                      <button
-                        key={s.id}
-                        onClick={() => {
-                          transitionTo(idx, 1);
-                          setDynamicFormOpen(false);
-                        }}
-                        className={`w-full px-3 py-1.5 rounded-xl text-left text-xs transition-colors flex items-center justify-between ${
-                          currentIndex === idx ? 'bg-[#d97746] text-white' : 'bg-white/5 text-white/80 hover:bg-white/10'
-                        }`}
-                      >
-                        <span>{s.name}</span>
-                        <span className="font-mono-coord text-[10px] opacity-60">{s.coordsLat}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
+              <div className="brief-field"><div className="slider-title"><label htmlFor="journey-days">How long?</label><span>{days} DAYS</span></div><input type="range" id="journey-days" min="3" max="21" value={days} onChange={e=>setDays(Number(e.target.value))}/><div className="range-labels"><span>3 DAYS</span><span>21 DAYS</span></div></div>
+              <div className="brief-field"><label>What feels like your kind of journey?</label><div className="pace-grid">{PACES.map(p=><button key={p} className={pace===p?'is-picked':''} onClick={()=>setPace(p)} aria-pressed={pace===p}>{p}</button>)}</div></div>
+              <button className="brief-submit" onClick={copyBrief}>{copied ? <><Check size={17}/> Copied to clipboard</> : <><Copy size={16}/> Copy my travel brief <ArrowUpRight size={17}/></>}</button>
+              <p className="brief-disclaimer">This creates a travel brief to share. It does not submit a booking or collect your personal details.</p>
+            </motion.div>
           </div>
+        </section>
+      </main>
+
+      <footer className="site-footer">
+        <div className="content-width">
+          <div className="footer-top"><div><Wordmark light/><p>A more personal way to discover Sri Lanka.</p></div><button onClick={()=>navigate('home')} className="back-to-top">BACK TO TOP <ArrowUpRight size={16}/></button></div>
+          <div className="footer-bottom"><span>© {new Date().getFullYear()} CEYLONO. THE RESONANT ISLAND.</span><span>CRAFTED FOR CURIOUS TRAVELLERS.</span></div>
         </div>
+      </footer>
 
-        {/* ========================================================= */}
-        {/* BOTTOM CONTROLS: EXACT "[parallax layering" + ARROW LINE & BUTTONS */}
-        {/* ========================================================= */}
-        <div className="relative z-30 pt-3 flex items-center justify-between">
-          
-          {/* Left Text: [parallax layering / powered by Anima.js */}
-          <div className="flex flex-col">
-            <span className="text-sm font-normal text-white/85 tracking-wide font-mono-coord">
-              [parallax layering
-            </span>
-            <span className="text-xs text-white/45 font-mono-coord">
-              powered by Anima.js
-            </span>
-          </div>
-
-          {/* Long Connecting Trajectory Line with Arrow and Circular Buttons (←) (→) */}
-          <div className="flex items-center gap-5 sm:gap-7">
-            
-            {/* Horizontal Line with Arrowhead */}
-            <div className="w-48 sm:w-72 md:w-96 h-px bg-white/20 relative flex items-center">
-              <div
-                className="anime-progress-line-fill absolute left-0 top-0 h-full bg-white/70 transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / SANCTUARIES.length) * 100}%` }}
-              />
-              <div className="absolute right-0 -top-1 w-2 h-2 border-t border-r border-white/50 rotate-45" />
-            </div>
-
-            {/* Circular Arrow Buttons matching screenshot */}
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={handlePrev}
-                onMouseMove={handleMagneticMove}
-                onMouseLeave={handleMagneticLeave}
-                title="Previous Destination"
-                className="w-8 h-8 rounded-full border border-white/20 hover:border-white/60 flex items-center justify-center text-white/70 hover:text-white transition-all text-xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleNext}
-                onMouseMove={handleMagneticMove}
-                onMouseLeave={handleMagneticLeave}
-                title="Next Destination"
-                className="w-8 h-8 rounded-full border border-white/20 hover:border-white/60 flex items-center justify-center text-white/70 hover:text-white transition-all text-xs"
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ========================================================= */}
-      {/* SANCTUARY DOSSIER MODAL ("Begin Journey") */}
-      {/* ========================================================= */}
-      {detailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-2xl rounded-3xl overflow-hidden bg-[#16181d] border border-white/20 shadow-2xl">
-            <button
-              onClick={() => setDetailModalOpen(false)}
-              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="relative h-64 w-full">
-              <img src={current.image} alt={current.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-[#16181d]/40 to-transparent" />
-              <div className="absolute bottom-4 left-6 right-6">
-                <span className="px-3 py-1 rounded-full text-xs font-mono-coord uppercase tracking-wider bg-amber-500/20 text-amber-200 border border-amber-500/30 inline-block mb-2">
-                  UNESCO Sanctuaries of Ceylon
-                </span>
-                <h3 className="font-cinzel text-3xl font-bold text-white">{current.name}</h3>
-                <div className="text-xs text-white/70 font-mono-coord mt-1">
-                  Coordinates: {current.coordsLat} // {current.coordsLon} | Elevation: {current.elevation}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 sm:p-8 space-y-5">
-              <p className="text-sm text-white/80 leading-relaxed">{current.description}</p>
-
-              <div>
-                <h4 className="text-xs font-mono-coord uppercase tracking-wider text-amber-400/90 mb-3">
-                  Resonant Sanctuary Highlights:
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {current.highlights.map((h, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-white/85 bg-white/5 p-2.5 rounded-xl border border-white/5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{h}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-white/40 block font-mono-coord">Pacing</span>
-                  <span className="text-sm font-semibold text-white">3 Nights Recommended</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setBookingConfirmed(true);
-                    setTimeout(() => {
-                      setBookingConfirmed(false);
-                      setDetailModalOpen(false);
-                    }, 1800);
-                  }}
-                  className="px-6 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-black font-medium text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all"
-                >
-                  {bookingConfirmed ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Sanctuary Reserved</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Lock Into Expedition</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <AnimatePresence>
+        {detail && <motion.div className="detail-overlay" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} role="presentation" onMouseDown={e=>{ if(e.target===e.currentTarget) setDetailId(null); }}>
+          <motion.div role="dialog" aria-modal="true" aria-label={`Discover ${detail.name}`} className="detail-panel" initial={{opacity:0,y:24}} animate={{opacity:1,y:0}} exit={{opacity:0,y:18}} transition={{duration:.3}}>
+            <button className="detail-close" onClick={()=>setDetailId(null)} aria-label="Close destination details"><X size={22}/></button>
+            <img src={detail.image} alt={detail.imageAlt}/>
+            <div className="detail-body"><SectionMarker>{detail.region.toUpperCase()}</SectionMarker><h2>{detail.name}<span>.</span></h2><p>{detail.summary}</p><div className="detail-highlights"><span className="micro-label">A FEW REASONS TO GO</span>{detail.highlights.map(h=><div key={h}><Check size={17}/>{h}</div>)}</div><button className="detail-action" onClick={()=>{setSelected(DESTINATIONS.findIndex(d=>d.id===detail.id));setDetailId(null);window.setTimeout(()=>navigate('enquire'),160);}}>Plan around {detail.name} <ArrowUpRight size={18}/></button></div>
+          </motion.div>
+        </motion.div>}
+      </AnimatePresence>
     </div>
   );
 }
