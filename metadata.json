@@ -1,0 +1,6 @@
+{
+  "name": "Ceylono — The Resonant Island",
+  "description": "Luxury minimalist dark-mode Sri Lanka travel platform featuring heavy Anime.js orchestration and interactive motion states.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
